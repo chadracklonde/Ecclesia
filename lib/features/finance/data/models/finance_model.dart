@@ -88,6 +88,38 @@ extension ReceiptDomainMapper on Receipt {
       id: id,
       transactionId: transactionId,
       receiptNumber: receiptNumber,
+      issueDate: Value(issueDate),
+      issuedBy: Value(issuedBy),
+    );
+  }
+}      memberId: Value(memberId),
+      serviceId: Value(serviceId),
+      category: Value(category),
+      note: Value(note),
+      recordedBy: Value(recordedBy),
+    );
+  }
+}
+
+extension ReceiptRowMapper on ReceiptRow {
+  Receipt toDomain() {
+    return Receipt(
+      id: id,
+      transactionId: transactionId,
+      receiptNumber: receiptNumber,
+      issueDate: issueDate,
+      issuedBy: issuedBy,
+      isCancelled: isCancelled,
+    );
+  }
+}
+
+extension ReceiptDomainMapper on Receipt {
+  ReceiptsCompanion toCompanion() {
+    return ReceiptsCompanion.insert(
+      id: id,
+      transactionId: transactionId,
+      receiptNumber: receiptNumber,
       issueDate: issueDate,
       issuedBy: Value(issuedBy),
     );
