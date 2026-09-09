@@ -1,0 +1,44 @@
+name: ecclesia
+description: Application de gestion complète pour église locale — local-first, multiplateforme.
+publish_to: 'none'
+version: 0.1.0+1
+
+environment:
+  sdk: '>=3.3.0 <4.0.0'
+  flutter: ">=3.19.0"
+
+# NOTE : les contraintes de version ci-dessous sont indicatives.
+# Ce sandbox n'a pas accès à pub.dev — à vérifier/ajuster avec
+# `flutter pub outdated` en environnement réel avant le premier `pub get`.
+dependencies:
+  flutter:
+    sdk: flutter
+  drift: ^2.16.0
+  sqlite3_flutter_libs: ^0.5.20
+  sqlcipher_flutter_libs: ^0.6.1
+  # Requis pour drift/wasm (Étape 10, Web hors-ligne) — version indicative,
+  # à vérifier contre pub.dev en environnement réel (non vérifiable ici).
+  sqlite3: ^2.4.0
+  path_provider: ^2.1.2
+  path: ^1.9.0
+  flutter_riverpod: ^2.5.1
+  uuid: ^4.3.3
+  equatable: ^2.0.5
+  crypto: ^3.0.3
+  flutter_secure_storage: ^9.2.2
+  mobile_scanner: ^5.2.3
+  qr_flutter: ^4.1.0
+  pdf: ^3.11.1
+  printing: ^5.13.2
+  supabase_flutter: ^2.5.6
+  connectivity_plus: ^6.0.5
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  drift_dev: ^2.16.0
+  build_runner: ^2.4.8
+  mocktail: ^1.0.3
+
+flutter:
+  uses-material-design: true
