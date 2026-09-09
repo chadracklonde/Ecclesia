@@ -13,13 +13,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # Version indicative, jamais vérifiée dans ce projet (non
-      # exécutable dans le sandbox où il a été écrit) — ajuste si besoin
-      # pour matcher la version de Flutter que tu utilises en local.
+      # Pas de version épinglée : récupère la dernière version stable de
+      # Flutter à chaque run, pour éviter le décalage constaté entre une
+      # version ancienne (ex. 3.24.0) et des paquets récents comme
+      # app_links/supabase_flutter qui attendent une configuration
+      # Android/Gradle plus moderne.
       - name: Installer Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.24.0'
           channel: 'stable'
           cache: true
 
@@ -58,7 +59,6 @@ jobs:
       - name: Installer Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.24.0'
           channel: 'stable'
           cache: true
 
@@ -103,7 +103,6 @@ jobs:
       - name: Installer Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.24.0'
           channel: 'stable'
           cache: true
 
@@ -127,3 +126,93 @@ jobs:
         with:
           name: ecclesia-web-build
           path: build/web
+
+  build-macos:
+    name: Build macOS
+    runs-on: macos-latest
+    needs: test
+    # Best-effort, comme les autres builds de plateforme : SQLCipher et
+    # les autres dépendances natives n'ont jamais été testées sur macOS
+    # réel dans ce projet.
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Installer Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+
+      - name: Récupérer les dépendances
+        run: flutter pub get
+
+      - name: Générer le code drift
+        run: dart run build_runner build --delete-conflicting-outputs
+
+      # Le dossier macos/ n'existe pas dans ce dépôt — même situation que
+      # pour android/ et web/, généré à la volée s'il est absent.
+      - name: Générer le projet macOS si absent
+        run: |
+          if [ ! -d "macos" ]; then
+            flutter create . --platforms=macos --project-name ecclesia --org com.rtcmali.ecclesia
+          fi
+
+      - name: Build macOS
+        run: flutter build macos
+
+      # Chemin de sortie non garanti à 100% (peut varier selon la version
+      # de Flutter) — on publie tout le dossier Release plutôt qu'un
+      # fichier .app nommé précisément, pour rester robuste.
+      - name: Publier le build macOS
+        uses: actions/upload-artifact@v4
+        with:
+          name: ecclesia-macos-build
+          path: build/macos/Build/Products/Release/
+
+  build-windows:
+    name: Build Windows
+    runs-on: windows-latest
+    needs: test
+    # Best-effort, comme les autres builds de plateforme : SQLCipher et
+    # les autres dépendances natives n'ont jamais été testées sur Windows
+    # réel dans ce projet.
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Installer Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+
+      - name: Récupérer les dépendances
+        run: flutter pub get
+
+      - name: Générer le code drift
+        run: dart run build_runner build --delete-conflicting-outputs
+
+      # Shell explicitement forcé en bash : par défaut, un runner Windows
+      # utilise PowerShell, où la syntaxe `if [ ! -d ... ]` ne fonctionne
+      # pas. Git for Windows (avec bash) est préinstallé sur windows-latest.
+      - name: Générer le projet Windows si absent
+        shell: bash
+        run: |
+          if [ ! -d "windows" ]; then
+            flutter create . --platforms=windows --project-name ecclesia --org com.rtcmali.ecclesia
+          fi
+
+      - name: Build Windows
+        run: flutter build windows
+
+      # Chemin de sortie non garanti à 100% (a changé entre versions de
+      # Flutter, ex. build/windows/runner/Release vs
+      # build/windows/x64/runner/Release) — motif large pour rester
+      # robuste face à cette incertitude, plutôt qu'un chemin figé qui
+      # échouerait silencieusement si la structure a changé.
+      - name: Publier le build Windows
+        uses: actions/upload-artifact@v4
+        with:
+          name: ecclesia-windows-build
+          path: build/windows/**/Release/**
