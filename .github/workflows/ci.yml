@@ -1,1 +1,129 @@
+name: CI
 
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    name: Analyse et tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Version indicative, jamais vérifiée dans ce projet (non
+      # exécutable dans le sandbox où il a été écrit) — ajuste si besoin
+      # pour matcher la version de Flutter que tu utilises en local.
+      - name: Installer Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.24.0'
+          channel: 'stable'
+          cache: true
+
+      - name: Récupérer les dépendances
+        run: flutter pub get
+
+      # Étape critique : sans elle, AppDatabase/MembersCompanion/etc.
+      # (générés par drift) n'existent pas et tout le reste échoue.
+      - name: Générer le code drift
+        run: dart run build_runner build --delete-conflicting-outputs
+
+      - name: Analyser le code
+        run: flutter analyze
+        # Ne bloque pas le workflow sur de simples avertissements —
+        # retire cette ligne si tu veux un contrôle strict dès le début.
+        continue-on-error: true
+
+      # 87 tests attendus au moment de la rédaction de ce workflow —
+      # voir docs/ecclesia-audit-protocole.md si le nombre a changé.
+      - name: Lancer les tests
+        run: flutter test
+
+  build-android:
+    name: Build Android (APK debug)
+    runs-on: ubuntu-latest
+    needs: test
+    # Best-effort : ce job échouera si sqlcipher_flutter_libs ou une
+    # autre dépendance native pose problème — jamais vérifié en
+    # environnement réel. Ne bloque pas le job "test" ci-dessus si il
+    # échoue (voir `continue-on-error` plus bas), pour que l'essentiel
+    # (analyse + tests) reste visible même si le build APK casse.
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Installer Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.24.0'
+          channel: 'stable'
+          cache: true
+
+      - name: Récupérer les dépendances
+        run: flutter pub get
+
+      - name: Générer le code drift
+        run: dart run build_runner build --delete-conflicting-outputs
+
+      # Le dossier android/ n'existe pas dans ce dépôt (jamais généré,
+      # écrit hors d'un environnement Flutter). `flutter create .` sur un
+      # projet existant ajoute les dossiers de plateforme manquants sans
+      # toucher à lib/ ni pubspec.yaml.
+      - name: Générer le projet Android si absent
+        run: |
+          if [ ! -d "android" ]; then
+            flutter create . --platforms=android --org com.rtcmali.ecclesia
+          fi
+
+      - name: Build APK debug
+        run: flutter build apk --debug
+
+      - name: Publier l'APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: ecclesia-debug-apk
+          path: build/app/outputs/flutter-apk/app-debug.apk
+
+  build-web:
+    name: Build Web
+    runs-on: ubuntu-latest
+    needs: test
+    # Best-effort explicite : voir docs/ecclesia-etape10-multiplateforme.md.
+    # `sqlite3.wasm`/`drift_worker.js` doivent être présents dans web/
+    # pour que l'app fonctionne réellement — leur absence peut faire
+    # échouer ce job ou produire un build qui plante à l'ouverture de la
+    # base de données.
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Installer Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.24.0'
+          channel: 'stable'
+          cache: true
+
+      - name: Récupérer les dépendances
+        run: flutter pub get
+
+      - name: Générer le code drift
+        run: dart run build_runner build --delete-conflicting-outputs
+
+      - name: Générer le projet Web si absent
+        run: |
+          if [ ! -d "web" ]; then
+            flutter create . --platforms=web --org com.rtcmali.ecclesia
+          fi
+
+      - name: Build Web
+        run: flutter build web
+
+      - name: Publier le build Web
+        uses: actions/upload-artifact@v4
+        with:
+          name: ecclesia-web-build
+          path: build/web
