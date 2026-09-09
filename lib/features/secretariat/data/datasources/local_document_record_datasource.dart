@@ -1,3 +1,5 @@
+import 'package:drift/drift.dart';
+
 import '../../../../core/database/database.dart';
 
 class LocalDocumentRecordDataSource {
