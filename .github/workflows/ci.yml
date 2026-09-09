@@ -75,7 +75,7 @@ jobs:
       - name: Générer le projet Android si absent
         run: |
           if [ ! -d "android" ]; then
-            flutter create . --platforms=android --org com.rtcmali.ecclesia
+            flutter create . --platforms=android --project-name ecclesia --org com.rtcmali.ecclesia
           fi
 
       - name: Build APK debug
@@ -116,7 +116,7 @@ jobs:
       - name: Générer le projet Web si absent
         run: |
           if [ ! -d "web" ]; then
-            flutter create . --platforms=web --org com.rtcmali.ecclesia
+            flutter create . --platforms=web --project-name ecclesia --org com.rtcmali.ecclesia
           fi
 
       - name: Build Web
