@@ -45,6 +45,13 @@ void main() {
     joinDate: DateTime(2026),
   );
 
+  setUpAll(() {
+    registerFallbackValue(const PreacherAssignment(
+      id: 'fallback',
+      serviceId: 'fallback-service',
+    ));
+  });
+
   setUp(() {
     serviceRepository = MockServiceRepository();
     assignmentRepository = MockPreacherAssignmentRepository();
